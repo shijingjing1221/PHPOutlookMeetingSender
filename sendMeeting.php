@@ -177,81 +177,85 @@ class sendMeeting {
 				$message .= $ical;
 
 
-        echo "BEFORE CONNECT</br>";
-		//连接服务器
-		$timeOut = empty($this->socketTimeout) ? 6000 : $this->socketTimeout;
-		if(function_exists('fsockopen'))
-			$fp = @fsockopen ( $this->smtp, $this->post, $errno, $errstr, $timeOut);
-		else if(function_exists('pfsockopen'))
-			$fp = @pfsockopen ( $this->smtp, $this->post, $errno, $errstr, $timeOut);
-		else if(function_exists('stream_socket_client'))
-			$fp = @stream_socket_client ( $this->smtp.':'.$this->post, $errno, $errstr, $timeOut);
-		else
-			return "0:all socket function isnot exists";
-		if (!$fp) return "0:open server socket error,".$errstr."({$errno})";
-		stream_set_blocking($fp, true);
-		$lastmessage=fgets($fp,512);
-		if ( substr($lastmessage,0,3) != '220' ) return "1:$lastmessage";
+        if(empty($this->smtp)){
+        	return mail($this->to, $this->subject, $this->message, $this->headers);
+        }else{
+        	echo "BEFORE CONNECT</br>";
+			//连接服务器
+			$timeOut = empty($this->socketTimeout) ? 6000 : $this->socketTimeout;
+			if(function_exists('fsockopen'))
+				$fp = @fsockopen ( $this->smtp, $this->post, $errno, $errstr, $timeOut);
+			else if(function_exists('pfsockopen'))
+				$fp = @pfsockopen ( $this->smtp, $this->post, $errno, $errstr, $timeOut);
+			else if(function_exists('stream_socket_client'))
+				$fp = @stream_socket_client ( $this->smtp.':'.$this->post, $errno, $errstr, $timeOut);
+			else
+				return "0:all socket function isnot exists";
+			if (!$fp) return "0:open server socket error,".$errstr."({$errno})";
+			stream_set_blocking($fp, true);
+			$lastmessage=fgets($fp,512);
+			if ( substr($lastmessage,0,3) != '220' ) return "1:$lastmessage";
 
-		//Hello
-		if($this->check) $lastact="EHLO ".str_replace(' ','-',$this->serverName)."\r\n";
-		else $lastact="HELO ".str_replace(' ','-',$this->serverName)."\r\n";
-		fputs($fp, $lastact);
-		$lastmessage == fgets($fp,512);
-		if (substr($lastmessage,0,3) != '220' ) return "2:$lastmessage";
+			//Hello
+			if($this->check) $lastact="EHLO ".str_replace(' ','-',$this->serverName)."\r\n";
+			else $lastact="HELO ".str_replace(' ','-',$this->serverName)."\r\n";
+			fputs($fp, $lastact);
+			$lastmessage == fgets($fp,512);
+			if (substr($lastmessage,0,3) != '220' ) return "2:$lastmessage";
 
-		do $lastmessage = fgets($fp,512);
-		while(!empty($lastmessage) && (substr($lastmessage,3,1) == "-"));
+			do $lastmessage = fgets($fp,512);
+			while(!empty($lastmessage) && (substr($lastmessage,3,1) == "-"));
 		
-		//服务器需要身份验证
-		if ($this->check) {
-			//发送验证请求
-			$lastact="AUTH LOGIN"."\r\n";
-			fputs( $fp, $lastact);
-			$lastmessage = fgets ($fp,512);
-			if (substr($lastmessage,0,3) != "334") return "3:$lastmessage";
-			//输入用户账号
-			$lastact=base64_encode($this->user)."\r\n";
-			fputs( $fp, $lastact);
-			$lastmessage = fgets ($fp,512);
-			if (substr($lastmessage,0,3) != "334") return "4:$lastmessage";
-			//输入用户密码
-			$lastact=base64_encode($this->pass)."\r\n";
-			fputs( $fp, $lastact);
-			$lastmessage = fgets ($fp,512);
-			if (substr($lastmessage,0,3) != "235") return "5:$lastmessage";
-		}
+			//服务器需要身份验证
+			if ($this->check) {
+				//发送验证请求
+				$lastact="AUTH LOGIN"."\r\n";
+				fputs( $fp, $lastact);
+				$lastmessage = fgets ($fp,512);
+				if (substr($lastmessage,0,3) != "334") return "3:$lastmessage";
+				//输入用户账号
+				$lastact=base64_encode($this->user)."\r\n";
+				fputs( $fp, $lastact);
+				$lastmessage = fgets ($fp,512);
+				if (substr($lastmessage,0,3) != "334") return "4:$lastmessage";
+				//输入用户密码
+				$lastact=base64_encode($this->pass)."\r\n";
+				fputs( $fp, $lastact);
+				$lastmessage = fgets ($fp,512);
+				if (substr($lastmessage,0,3) != "235") return "5:$lastmessage";
+			}
 
-		//发送MAIL FROM信息
-		$lastact="MAIL FROM: <". $this->from . ">\r\n";
-		fputs( $fp, $lastact);
-		$lastmessage = fgets ($fp,512);
-		if (substr($lastmessage,0,3) != '250') return "6:$lastmessage";
+			//发送MAIL FROM信息
+			$lastact="MAIL FROM: <". $this->from . ">\r\n";
+			fputs( $fp, $lastact);
+			$lastmessage = fgets ($fp,512);
+			if (substr($lastmessage,0,3) != '250') return "6:$lastmessage";
 
-		//发送RCPT TO信息
-		$lastact="RCPT TO: <". $this->to ."> \r\n";
-		fputs( $fp, $lastact);
-		$lastmessage = fgets ($fp,512);
-		if (substr($lastmessage,0,3) != '250') return "7:$lastmessage";
+			//发送RCPT TO信息
+			$lastact="RCPT TO: <". $this->to ."> \r\n";
+			fputs( $fp, $lastact);
+			$lastmessage = fgets ($fp,512);
+			if (substr($lastmessage,0,3) != '250') return "7:$lastmessage";
 			
 		//发送DATA信息
-		$lastact="DATA"."\r\n";
-		fputs($fp, $lastact);
-		$lastmessage = fgets ($fp,512);
-		if (substr($lastmessage,0,3) != '354') return "8:$lastmessage";
-		echo " TEST BEFOR SET VALUE</br>";
+			$lastact="DATA"."\r\n";
+			fputs($fp, $lastact);
+			$lastmessage = fgets ($fp,512);
+			if (substr($lastmessage,0,3) != '354') return "8:$lastmessage";
+			echo " TEST BEFOR SET VALUE</br>";
 
-        $whole_contents = $headers."\r\n".$message."\r\n\r\n--". $mime_boundary ."--\r\n\r\n.";
+        	$whole_contents = $headers."\r\n".$message."\r\n\r\n--". $mime_boundary ."--\r\n\r\n.";
 
-		//发送信息
-		fputs($fp, $whole_contents);
-		$lastmessage = fgets($fp,512);
-		if (substr($lastmessage,0,3) != '250') return "8:$lastmessage";
+			//发送信息
+			fputs($fp, $whole_contents);
+			$lastmessage = fgets($fp,512);
+			if (substr($lastmessage,0,3) != '250') return "8:$lastmessage";
 		
-		$lastact="QUIT"."\r\n";
-		fputs($fp,$lastact);
-		fclose($fp);
-		return false;
+			$lastact="QUIT"."\r\n";
+			fputs($fp,$lastact);
+			fclose($fp);
+			return false;
+		}
 	}
 }
 ?>
