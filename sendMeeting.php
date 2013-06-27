@@ -2,12 +2,12 @@
 class sendMeeting {
 
 	/*******************************************************************
-	*@class sendMail SMTP方式发送邮件类
+	*@class sendMeeting发送会议邀请邮件类
 	*By:史晶晶 shijingjing1221@gmail.com
-	*GitHub:https://github.com/MouLingtao/PHP-SMTP-Send-Mail
+	*GitHub:https://github.com/shijingjing1221/PHPOutlookMeetingSender
 	*
-	*感谢所有提供帮助的开源例子。由于各大网站转载后把你们名字去掉或替换
-	*成自己的网站名字，在下不知原作者，还望原作者见谅。
+	*感谢开源项目PHP-SMTP-Send-Mail，本例子中的SMTP方式基于
+	*https://github.com/MouLingtao/PHP-SMTP-Send-Mail
 	*******************************************************************/
 
 
@@ -174,11 +174,11 @@ class sendMeeting {
 				'END:VEVENT'. "\r\n" .
 				'END:VCALENDAR'. "\r\n";
 
-				$message .= $ical;
+		$message .= $ical;
 
 
         if(empty($this->smtp)){
-        	return mail($this->to, $this->subject, $this->message, $this->headers);
+        	return mail($this->to, $this->subject, $message, $headers);
         }else{
         	echo "BEFORE CONNECT</br>";
 			//连接服务器
